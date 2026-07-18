@@ -1023,17 +1023,63 @@ input:disabled, select:disabled, textarea:disabled {
   grid-column: 1 / -1;
 }
 
-.outreach-draft-row {
+/* ============================================================
+   COLD EMAIL (template variant tabs + send status)
+   ============================================================ */
+.variant-tabs {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
+  margin: 0.4rem 0 0.5rem;
 }
 
-.outreach-draft-row select {
-  flex: 1;
-  min-width: 12rem;
+.variant-tab {
+  padding: 0.5rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid var(--card-border);
+  background: var(--card-bg);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: normal;
+  cursor: pointer;
 }
+
+.variant-tab.active {
+  background: var(--primary-light);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.status-list {
+  margin-top: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.85rem;
+  border-radius: 10px;
+  background: var(--section-bg);
+  font-size: 0.85rem;
+}
+
+.badge {
+  border-radius: 999px;
+  padding: 0.2rem 0.65rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.badge-success { background: var(--success-bg); color: var(--success); }
+.badge-error { background: var(--error-bg); color: var(--error); }
+.badge-pending { background: var(--section-bg); color: var(--text-muted); }
 
 .query-row {
   flex-direction: row;

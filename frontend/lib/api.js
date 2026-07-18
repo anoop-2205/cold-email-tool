@@ -132,6 +132,9 @@ export const api = {
   sendOutreach: (data) => request("/api/outreach/send", { method: "POST", body: data }),
   getOutreach: () => request("/api/outreach"),
 
+  sendColdEmail: (data) => request("/api/cold-email/send", { method: "POST", body: data }),
+  getColdEmails: () => request("/api/cold-email"),
+
   getNaukriStatus: () => request("/api/naukri/status"),
   setNaukriCredentials: (username, password) =>
     request("/api/naukri/credentials", { method: "PUT", body: { username, password } }),

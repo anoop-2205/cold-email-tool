@@ -30,7 +30,7 @@ class DraftOut(BaseModel):
 
 class SendRequest(BaseModel):
     job_id: int | None = None
-    recruiter_emails: list[str]
+    recruiter_email: str
     company: str = ""
     role_title: str = ""
     subject: str
@@ -51,16 +51,6 @@ class OutreachOut(BaseModel):
 
     class Config:
         from_attributes = True
-
-
-class SendFailureOut(BaseModel):
-    recruiter_email: str
-    error: str
-
-
-class SendBatchOut(BaseModel):
-    sent: list[OutreachOut]
-    failed: list[SendFailureOut]
 
 
 def _require_profile(db: Session, user_id: int) -> Profile:
@@ -94,7 +84,7 @@ def draft(body: DraftRequest, db: Session = Depends(get_db), current_user: Curre
     return DraftOut(**result)
 
 
-@router.post("/send", response_model=SendBatchOut)
+@router.post("/send", response_model=OutreachOut)
 def send(body: SendRequest, db: Session = Depends(get_db), current_user: CurrentUser = Depends(require_auth)):
     profile = _require_profile(db, current_user.id)
 
@@ -103,56 +93,42 @@ def send(body: SendRequest, db: Session = Depends(get_db), current_user: Current
         if not job:
             raise HTTPException(404, "Job not found")
 
-    # Dedupe while preserving order, so picking the same inbound email twice
-    # (or pasting a list with a repeat) doesn't send it twice.
-    emails = list(dict.fromkeys(e.strip() for e in body.recruiter_emails if e.strip()))
-    if not emails:
-        raise HTTPException(400, "Provide at least one recruiter email")
-
     attachment_path = profile.resume_pdf_path if (body.attach_resume and profile.resume_pdf_path) else None
 
-    sent: list[OutreachOut] = []
-    failed: list[SendFailureOut] = []
-    for recruiter_email in emails:
-        try:
-            message_id = send_cold_email(db, current_user.id, recruiter_email, body.subject, body.body, attachment_path)
-        except GmailAuthError as exc:
-            # Connection-level failure -- applies to every recipient, no point retrying the rest.
-            raise HTTPException(400, str(exc)) from exc
-        except Exception as exc:  # noqa: BLE001 -- one bad address shouldn't sink the whole batch
-            failed.append(SendFailureOut(recruiter_email=recruiter_email, error=str(exc)))
-            continue
+    try:
+        message_id = send_cold_email(db, current_user.id, body.recruiter_email, body.subject, body.body, attachment_path)
+        status = "sent"
+    except GmailAuthError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001 -- surface any Gmail API failure as a clean 400
+        raise HTTPException(400, f"Could not send email: {exc}") from exc
 
-        record = Outreach(
-            user_id=current_user.id,
-            job_id=body.job_id,
-            recruiter_email=recruiter_email,
-            company=body.company,
-            role_title=body.role_title,
-            subject=body.subject,
-            body=body.body,
-            resume_attached=bool(attachment_path),
-            gmail_message_id=message_id,
-            status="sent",
-        )
-        db.add(record)
-        db.commit()
-        db.refresh(record)
-        sent.append(
-            OutreachOut(
-                id=record.id,
-                job_id=record.job_id,
-                recruiter_email=record.recruiter_email,
-                company=record.company,
-                role_title=record.role_title,
-                subject=record.subject,
-                status=record.status,
-                resume_attached=record.resume_attached,
-                sent_at=record.sent_at.isoformat(),
-            )
-        )
-
-    return SendBatchOut(sent=sent, failed=failed)
+    record = Outreach(
+        user_id=current_user.id,
+        job_id=body.job_id,
+        recruiter_email=body.recruiter_email,
+        company=body.company,
+        role_title=body.role_title,
+        subject=body.subject,
+        body=body.body,
+        resume_attached=bool(attachment_path),
+        gmail_message_id=message_id,
+        status=status,
+    )
+    db.add(record)
+    db.commit()
+    db.refresh(record)
+    return OutreachOut(
+        id=record.id,
+        job_id=record.job_id,
+        recruiter_email=record.recruiter_email,
+        company=record.company,
+        role_title=record.role_title,
+        subject=record.subject,
+        status=record.status,
+        resume_attached=record.resume_attached,
+        sent_at=record.sent_at.isoformat(),
+    )
 
 
 @router.get("", response_model=list[OutreachOut])

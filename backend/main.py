@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from config import settings
 from database import SessionLocal, init_db
-from routers import admin, agent, analytics, applications, auth, email_intel, gmail, jobs, naukri, outreach, profile
+from routers import admin, agent, analytics, applications, auth, cold_email, email_intel, gmail, jobs, naukri, outreach, profile
 from routers import settings as settings_router
 
 scheduler = BackgroundScheduler()
@@ -134,6 +134,7 @@ app.include_router(settings_router.router)
 app.include_router(admin.router)
 app.include_router(gmail.router)
 app.include_router(outreach.router)
+app.include_router(cold_email.router)
 app.include_router(naukri.router)
 
 

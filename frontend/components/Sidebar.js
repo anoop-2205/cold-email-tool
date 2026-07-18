@@ -11,6 +11,7 @@ const CANDIDATE_NAV = [
   { href: "/jobs", label: "Jobs", icon: "⌘" },
   { href: "/applications", label: "Applications", icon: "✓" },
   { href: "/outreach", label: "Outreach", icon: "➤" },
+  { href: "/cold-email", label: "Cold Email", icon: "✎" },
   { href: "/inbox", label: "Inbox", icon: "✉" },
   { href: "/analytics", label: "Analytics", icon: "≡" },
   { href: "/settings", label: "Settings", icon: "⚙" },

@@ -153,6 +153,25 @@ class Outreach(Base):
     job = relationship("Job")
 
 
+class ColdEmail(Base):
+    """A custom cold email sent to one or more recipients at once, via the
+    candidate's own connected Gmail, using a canned template -- not tied to
+    a job listing and not AI-drafted (see Outreach for that flow)."""
+
+    __tablename__ = "cold_emails"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    recruiter_email = Column(String, nullable=False)
+    template = Column(String, default="")
+    subject = Column(String, default="")
+    body = Column(Text, default="")
+    resume_attached = Column(Boolean, default=False)
+    gmail_message_id = Column(String, default="")
+    status = Column(String, default="sent")  # sent / failed
+    sent_at = Column(DateTime, default=utcnow)
+
+
 class Setting(Base):
     __tablename__ = "settings"
 
