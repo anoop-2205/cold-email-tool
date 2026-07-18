@@ -21,6 +21,7 @@ import json
 from datetime import timezone as _dt_timezone
 from email.utils import parsedate_to_datetime
 
+from google.auth.exceptions import RefreshError
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
@@ -95,7 +96,20 @@ def get_gmail_service_for_user(db: Session, user_id: int):
     creds = Credentials.from_authorized_user_info(json.loads(user.gmail_token_json), SCOPES)
     if not creds.valid:
         if creds.expired and creds.refresh_token:
-            creds.refresh(Request())
+            try:
+                creds.refresh(Request())
+            except RefreshError as exc:
+                # The refresh token itself is dead (revoked in the Google Account,
+                # or -- very common for an unverified/"Testing" OAuth consent
+                # screen -- expired after 7 days). It will never succeed again on
+                # its own, so clear it rather than leaving the UI showing
+                # "Connected" for a token that's permanently broken.
+                user.gmail_token_json = None
+                user.gmail_email = None
+                db.commit()
+                raise GmailAuthError(
+                    "Gmail connection expired or was revoked. Please reconnect on the Inbox page."
+                ) from exc
             user.gmail_token_json = creds.to_json()
             db.commit()
         else:
