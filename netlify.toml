@@ -1,7 +1,11 @@
-# Netlify configuration for Next.js App Router deployment
+# Netlify configuration for Next.js App Router deployment.
+# Only the frontend/ dashboard deploys here -- the Python backend
+# (scraper, Playwright automation, Gmail scanning) is local-first per
+# the plan's design and is not deployed by this config.
 [build]
+  base = "frontend"
   command = "npm run build"
-  publish = ".next"
+  publish = "frontend/.next"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"

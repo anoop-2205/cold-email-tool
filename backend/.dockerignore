@@ -1,0 +1,11 @@
+venv/
+__pycache__/
+*.pyc
+data/*.db
+data/resumes/*
+data/screenshots/*
+!data/resumes/.gitkeep
+!data/screenshots/.gitkeep
+config/credentials.json
+config/token.json
+.env
