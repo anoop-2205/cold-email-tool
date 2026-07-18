@@ -25,7 +25,7 @@ I'm currently a **Software Engineer** at **Centricity Wealth Tech**, where I've 
 I'd be glad to share more about my work and discuss how I can contribute to your team. My resume is attached for your reference.
 
 Resume: [attached]
-Portfolio: https://anoop-2205.github.io/Personal_Protfolio_anoop/
+Portfolio: https://anoopsingh.tech/
 GitHub: https://github.com/anoop-2205
 LinkedIn: https://www.linkedin.com/in/-anoop-singh/
 
@@ -48,7 +48,7 @@ At **Centricity Wealth Tech**, I work primarily with **Angular (12 & 19)**, **Ty
 If there are open roles or a referral path you could point me to, I'd really appreciate it. Happy to share more details or a quick call at your convenience.
 
 Resume: [attached]
-Portfolio: https://anoop-2205.github.io/Personal_Protfolio_anoop/
+Portfolio: https://anoopsingh.tech/
 
 Thanks so much,
 Anoop Singh
@@ -72,7 +72,7 @@ A quick snapshot of my background:
 I believe my experience aligns well with what you're looking for, and I'd love the opportunity to contribute to **[Company Name]**. My resume is attached, and you can find more of my work at the links below.
 
 Resume: [attached]
-Portfolio: https://anoop-2205.github.io/Personal_Protfolio_anoop/
+Portfolio: https://anoopsingh.tech/
 GitHub: https://github.com/anoop-2205
 
 Looking forward to hearing from you.
@@ -97,6 +97,7 @@ export default function ColdEmailPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [sending, setSending] = useState(false);
+  const [drafting, setDrafting] = useState(false);
   const [batchStatus, setBatchStatus] = useState([]);
 
   const [recruiterEmails, setRecruiterEmails] = useState("");
@@ -180,6 +181,25 @@ export default function ColdEmailPage() {
 
   function selectTemplate(id) {
     setSelectedTemplate(id);
+  }
+
+  async function handleDraft() {
+    setError("");
+    setDrafting(true);
+    try {
+      const draft = await api.draftColdEmail({
+        company: fields.companyName,
+        role_title: fields.roleTitle,
+        recipient_name: fields.recipientName,
+      });
+      setSelectedTemplate("custom");
+      setCustomSubject(draft.subject);
+      setCustomMessage(draft.body);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setDrafting(false);
+    }
   }
 
   async function handleSend(e) {
@@ -284,6 +304,12 @@ export default function ColdEmailPage() {
               ) : (
                 <p className="page-hint">Editing directly — pick a variant above to reload a template.</p>
               )}
+            </div>
+
+            <div className="span-2">
+              <button className="btn-secondary" type="button" onClick={handleDraft} disabled={drafting}>
+                {drafting ? "Drafting…" : "Generate draft with AI"}
+              </button>
             </div>
 
             {selectedTemplate !== "custom" ? (

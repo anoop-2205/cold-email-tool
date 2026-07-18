@@ -36,3 +36,43 @@ def draft_cold_email(profile: Profile, company: str, role_title: str, job_descri
         "subject": result.get("subject") or f"Interest in {role_title or 'opportunities'} at {company}",
         "body": result.get("body", ""),
     }
+
+
+# Used by the Cold Email page (custom, multi-recipient, template-driven --
+# not tied to one specific job listing), so this is fuller and more detailed
+# than the punchy single-recipient Outreach draft above.
+FULL_SYSTEM_PROMPT = """You write complete, detailed cold outreach emails from a job seeker to a recruiter,
+hiring manager, or potential referrer. Return JSON ONLY:
+{"subject": string, "body": string}
+
+Rules for the body:
+- 150-250 words, plain text. Use **double asterisks** around 2-4 key skills/achievements for emphasis, and a
+  short "- " bulleted list of 2-4 concrete highlights from the candidate's experience
+- Open with something specific and true about the candidate (not "I hope this finds you well")
+- Reference the target company/role by name if given; if not given, write generally about the kind of role
+  the candidate is looking for instead of leaving a placeholder
+- One clear, low-friction ask at the end (e.g. "open to a quick chat this week?" or "would you be able to
+  refer me, or point me to the right person?")
+- No generic filler, no placeholders like [Company Name] or [Role Title]
+- Sign off with just the candidate's first name -- full contact details are in the resume attachment
+
+Rules for the subject: under 60 characters, specific, not clickbait."""
+
+
+def draft_full_cold_email(profile: Profile, company: str = "", role_title: str = "", recipient_name: str = "") -> dict:
+    context = (
+        f"CANDIDATE: {profile.full_name}\nSummary: {profile.summary}\nSkills: {', '.join(profile.skills or [])}\n"
+        f"Experience: {profile.experience}\n"
+    )
+    if company:
+        context += f"\nTARGET COMPANY: {company}"
+    if role_title:
+        context += f"\nTARGET ROLE: {role_title}"
+    if recipient_name:
+        context += f"\nRECIPIENT NAME: {recipient_name}"
+
+    result = complete_json(FULL_SYSTEM_PROMPT, context, max_tokens=700)
+    return {
+        "subject": result.get("subject") or f"Interest in opportunities at {company or 'your team'}",
+        "body": result.get("body", ""),
+    }

@@ -3,6 +3,8 @@ connected Gmail. Draft first (AI-generated, editable), then send explicitly
 -- never sent without the candidate reviewing it, per the plan's
 human-in-the-loop principle.
 """
+from pathlib import Path
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -94,9 +96,13 @@ def send(body: SendRequest, db: Session = Depends(get_db), current_user: Current
             raise HTTPException(404, "Job not found")
 
     attachment_path = profile.resume_pdf_path if (body.attach_resume and profile.resume_pdf_path) else None
+    if attachment_path and not Path(attachment_path).exists():
+        raise HTTPException(400, "Your saved resume file is missing on the server -- re-upload it on the Profile page.")
 
     try:
-        message_id = send_cold_email(db, current_user.id, body.recruiter_email, body.subject, body.body, attachment_path)
+        message_id, resume_attached = send_cold_email(
+            db, current_user.id, body.recruiter_email, body.subject, body.body, attachment_path
+        )
         status = "sent"
     except GmailAuthError as exc:
         raise HTTPException(400, str(exc)) from exc
@@ -111,7 +117,7 @@ def send(body: SendRequest, db: Session = Depends(get_db), current_user: Current
         role_title=body.role_title,
         subject=body.subject,
         body=body.body,
-        resume_attached=bool(attachment_path),
+        resume_attached=resume_attached,
         gmail_message_id=message_id,
         status=status,
     )

@@ -132,6 +132,7 @@ export const api = {
   sendOutreach: (data) => request("/api/outreach/send", { method: "POST", body: data }),
   getOutreach: () => request("/api/outreach"),
 
+  draftColdEmail: (data) => request("/api/cold-email/draft", { method: "POST", body: data }),
   sendColdEmail: (data) => request("/api/cold-email/send", { method: "POST", body: data }),
   getColdEmails: () => request("/api/cold-email"),
 

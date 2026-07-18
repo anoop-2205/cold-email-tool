@@ -31,7 +31,13 @@ def _markdown_to_html(body_text: str) -> str:
     )
 
 
-def _build_raw_message(from_address: str, to_address: str, subject: str, body_text: str, attachment_path: str | None) -> str:
+def _build_raw_message(
+    from_address: str, to_address: str, subject: str, body_text: str, attachment_path: str | None
+) -> tuple[str, bool]:
+    """Returns (raw_message, resume_actually_attached). The caller's
+    attachment_path is just what's on file for the candidate's profile --
+    verify it still exists on disk before claiming it was attached, rather
+    than silently sending without it while callers report success."""
     msg = MIMEMultipart("mixed")
     msg["From"] = from_address
     msg["To"] = to_address
@@ -42,6 +48,7 @@ def _build_raw_message(from_address: str, to_address: str, subject: str, body_te
     alt.attach(MIMEText(_markdown_to_html(body_text), "html"))
     msg.attach(alt)
 
+    attached = False
     if attachment_path:
         path = Path(attachment_path)
         if path.exists():
@@ -52,8 +59,9 @@ def _build_raw_message(from_address: str, to_address: str, subject: str, body_te
                 part = MIMEApplication(f.read(), _subtype=subtype)
             part.add_header("Content-Disposition", "attachment", filename=path.name)
             msg.attach(part)
+            attached = True
 
-    return base64.urlsafe_b64encode(msg.as_bytes()).decode()
+    return base64.urlsafe_b64encode(msg.as_bytes()).decode(), attached
 
 
 def send_cold_email(
@@ -63,8 +71,11 @@ def send_cold_email(
     subject: str,
     body_text: str,
     attachment_path: str | None = None,
-) -> str:
-    """Sends as the candidate's connected Gmail. Returns the Gmail message id.
+) -> tuple[str, bool]:
+    """Sends as the candidate's connected Gmail. Returns (gmail_message_id,
+    resume_actually_attached) -- the latter is False if attachment_path was
+    given but the file no longer exists on disk, so callers can record what
+    actually happened rather than what was merely requested.
     Raises GmailAuthError (from email_scanner) if they haven't connected, or
     haven't re-consented to the gmail.send scope yet."""
     from database import User
@@ -73,7 +84,7 @@ def send_cold_email(
     user = db.get(User, user_id)
     from_address = user.gmail_email or "me"
 
-    raw = _build_raw_message(from_address, to_address, subject, body_text, attachment_path)
+    raw, resume_attached = _build_raw_message(from_address, to_address, subject, body_text, attachment_path)
     try:
         sent = service.users().messages().send(userId="me", body={"raw": raw}).execute()
     except HttpError as exc:
@@ -85,4 +96,4 @@ def send_cold_email(
                 "permission was added). Disconnect and reconnect Gmail on the Inbox page."
             ) from exc
         raise
-    return sent["id"]
+    return sent["id"], resume_attached
