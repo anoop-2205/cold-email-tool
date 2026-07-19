@@ -19,7 +19,10 @@ Return JSON ONLY with exactly this shape:
   "skills": [string, ...],
   "experience": [{"company": string, "role": string, "duration": string, "bullets": [string, ...]}],
   "education": [{"institution": string, "degree": string, "year": string}],
-  "projects": [{"name": string, "description": string, "tech": [string, ...]}]
+  "projects": [{"name": string, "description": string, "tech": [string, ...]}],
+  "portfolio_url": string (personal website/portfolio link, if present),
+  "github_url": string,
+  "linkedin_url": string
 }
 Use "" or [] for fields you cannot find. Do not invent information not present in the resume."""
 
@@ -46,5 +49,6 @@ def parse_resume(pdf_path: str) -> dict:
     defaults = {
         "full_name": "", "email": "", "phone": "", "location": "", "summary": "",
         "skills": [], "experience": [], "education": [], "projects": [],
+        "portfolio_url": "", "github_url": "", "linkedin_url": "",
     }
     return {**defaults, **profile_data}

@@ -67,6 +67,9 @@ class Profile(Base):
     experience = Column(JSON, default=list)
     education = Column(JSON, default=list)
     projects = Column(JSON, default=list)
+    portfolio_url = Column(String, default="")
+    github_url = Column(String, default="")
+    linkedin_url = Column(String, default="")
     resume_pdf_path = Column(String, default="")
     updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
 
@@ -179,8 +182,30 @@ class Setting(Base):
     value = Column(JSON, default=dict)
 
 
+def _migrate_add_missing_columns() -> None:
+    """create_all() only creates missing tables, never adds columns to ones
+    that already exist -- there's no Alembic here, so handle the common case
+    (a new nullable/defaulted column on an existing table) by hand. ADD
+    COLUMN with a simple type + default is valid on both SQLite and Postgres."""
+    from sqlalchemy import inspect, text
+
+    inspector = inspect(engine)
+    for table in Base.metadata.tables.values():
+        if table.name not in inspector.get_table_names():
+            continue
+        existing = {col["name"] for col in inspector.get_columns(table.name)}
+        for column in table.columns:
+            if column.name in existing:
+                continue
+            col_type = column.type.compile(engine.dialect)
+            default = "''" if isinstance(column.type, String) else "NULL"
+            with engine.begin() as conn:
+                conn.execute(text(f"ALTER TABLE {table.name} ADD COLUMN {column.name} {col_type} DEFAULT {default}"))
+
+
 def init_db() -> None:
     Base.metadata.create_all(bind=engine)
+    _migrate_add_missing_columns()
 
 
 def get_db():

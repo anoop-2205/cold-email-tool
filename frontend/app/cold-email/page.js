@@ -24,16 +24,7 @@ I'm currently a **Software Engineer** at **Centricity Wealth Tech**, where I've 
 
 I'd be glad to share more about my work and discuss how I can contribute to your team. My resume is attached for your reference.
 
-Resume: [attached]
-Portfolio: https://anoopsingh.tech/
-GitHub: https://github.com/anoop-2205
-LinkedIn: https://www.linkedin.com/in/-anoop-singh/
-
-Thank you for your time.
-
-Best regards,
-Anoop Singh
-+91 6389641509`,
+Thank you for your time.`,
   },
   referral: {
     name: "Referral-friendly",
@@ -47,12 +38,7 @@ At **Centricity Wealth Tech**, I work primarily with **Angular (12 & 19)**, **Ty
 
 If there are open roles or a referral path you could point me to, I'd really appreciate it. Happy to share more details or a quick call at your convenience.
 
-Resume: [attached]
-Portfolio: https://anoopsingh.tech/
-
-Thanks so much,
-Anoop Singh
-+91 6389641509`,
+Thanks so much for your help!`,
   },
   specific: {
     name: "Specific role application",
@@ -71,17 +57,24 @@ A quick snapshot of my background:
 
 I believe my experience aligns well with what you're looking for, and I'd love the opportunity to contribute to **[Company Name]**. My resume is attached, and you can find more of my work at the links below.
 
-Resume: [attached]
-Portfolio: https://anoopsingh.tech/
-GitHub: https://github.com/anoop-2205
-
-Looking forward to hearing from you.
-
-Best regards,
-Anoop Singh
-+91 6389641509`,
+Looking forward to hearing from you.`,
   },
 };
+
+// Built dynamically from the candidate's profile instead of being baked
+// into each template, so it stays correct after a resume update without
+// having to edit every template.
+function buildSignature(profile) {
+  const lines = ["Resume: [attached]"];
+  if (profile?.portfolio_url) lines.push(`Portfolio: ${profile.portfolio_url}`);
+  if (profile?.github_url) lines.push(`GitHub: ${profile.github_url}`);
+  if (profile?.linkedin_url) lines.push(`LinkedIn: ${profile.linkedin_url}`);
+  lines.push("", "Best regards,", profile?.full_name || "");
+  if (profile?.phone) lines.push(profile.phone);
+  return lines.join("\n");
+}
+
+const EMPTY_FIELDS = { companyName: "", managerName: "", recipientName: "", roleTitle: "", jobSource: "LinkedIn" };
 
 // Splits the freeform "one per line or comma-separated" recipients box into a clean, deduped list.
 function parseEmailList(raw) {
@@ -94,6 +87,7 @@ function parseEmailList(raw) {
 
 export default function ColdEmailPage() {
   const [sent, setSent] = useState([]);
+  const [profile, setProfile] = useState(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [sending, setSending] = useState(false);
@@ -104,19 +98,15 @@ export default function ColdEmailPage() {
   const [attachResume, setAttachResume] = useState(true);
 
   const [selectedTemplate, setSelectedTemplate] = useState("direct"); // direct | referral | specific | custom
-  const [fields, setFields] = useState({
-    companyName: "",
-    managerName: "",
-    recipientName: "",
-    roleTitle: "",
-    jobSource: "LinkedIn",
-  });
+  const [fields, setFields] = useState(EMPTY_FIELDS);
   const [customSubject, setCustomSubject] = useState("");
   const [customMessage, setCustomMessage] = useState("");
 
   async function load() {
     try {
-      setSent(await api.getColdEmails());
+      const [emails, profileData] = await Promise.all([api.getColdEmails(), api.getProfile()]);
+      setSent(emails);
+      setProfile(profileData);
     } catch (err) {
       setError(err.message);
     }
@@ -159,7 +149,7 @@ export default function ColdEmailPage() {
         .replaceAll("[LinkedIn / Company Careers Page]", fields.jobSource || "[LinkedIn / Company Careers Page]");
     }
 
-    return { subject, message };
+    return { subject, message: `${message}\n\n${buildSignature(profile)}` };
   }
 
   const { subject: activeSubject, message: activeMessage } = compile();
@@ -181,6 +171,15 @@ export default function ColdEmailPage() {
 
   function selectTemplate(id) {
     setSelectedTemplate(id);
+  }
+
+  function resetForm() {
+    setRecruiterEmails("");
+    setSelectedTemplate("direct");
+    setFields(EMPTY_FIELDS);
+    setCustomSubject("");
+    setCustomMessage("");
+    setAttachResume(true);
   }
 
   async function handleDraft() {
@@ -243,7 +242,7 @@ export default function ColdEmailPage() {
 
       if (result.failed.length === 0) {
         setSuccess(result.sent.length === 1 ? "Email sent." : `${result.sent.length} emails sent.`);
-        setRecruiterEmails("");
+        resetForm();
       } else {
         setError(
           `Failed for: ${result.failed.map((f) => `${f.recruiter_email} (${f.error})`).join(", ")}` +

@@ -44,6 +44,9 @@ export default function ProfilePage() {
         location: profile.location,
         summary: profile.summary,
         skills: profile.skills,
+        portfolio_url: profile.portfolio_url,
+        github_url: profile.github_url,
+        linkedin_url: profile.linkedin_url,
       });
       setProfile(updated);
     } catch (err) {
@@ -116,7 +119,35 @@ export default function ProfilePage() {
               Summary
               <textarea rows={3} value={profile.summary || ""} onChange={(e) => updateField("summary", e.target.value)} />
             </label>
+            <label>
+              Portfolio URL
+              <input
+                value={profile.portfolio_url || ""}
+                onChange={(e) => updateField("portfolio_url", e.target.value)}
+                placeholder="https://yoursite.com"
+              />
+            </label>
+            <label>
+              GitHub URL
+              <input
+                value={profile.github_url || ""}
+                onChange={(e) => updateField("github_url", e.target.value)}
+                placeholder="https://github.com/username"
+              />
+            </label>
+            <label>
+              LinkedIn URL
+              <input
+                value={profile.linkedin_url || ""}
+                onChange={(e) => updateField("linkedin_url", e.target.value)}
+                placeholder="https://linkedin.com/in/username"
+              />
+            </label>
           </div>
+          <p className="page-hint">
+            Portfolio/GitHub/LinkedIn are auto-filled when parsed from your resume, and used as the signature block
+            in Cold Email templates — edit them here if they&apos;re missing or out of date.
+          </p>
 
           <div className="tag-list">
             {(profile.skills || []).map((skill, i) => (

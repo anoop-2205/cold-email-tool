@@ -24,6 +24,9 @@ class ProfileOut(BaseModel):
     experience: list
     education: list
     projects: list
+    portfolio_url: str
+    github_url: str
+    linkedin_url: str
     resume_pdf_path: str
 
     class Config:
@@ -40,6 +43,9 @@ class ProfileUpdate(BaseModel):
     experience: list | None = None
     education: list | None = None
     projects: list | None = None
+    portfolio_url: str | None = None
+    github_url: str | None = None
+    linkedin_url: str | None = None
 
 
 def _get_or_create(db: Session, user_id: int) -> Profile:
